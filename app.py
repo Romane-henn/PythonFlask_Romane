@@ -32,5 +32,16 @@ def about():
 def projects():
     return render_template("projects.html")
 
+import os
+from flask import Flask, render_template, send_from_directory
+
+# ... ton code existant ...
+
+@app.route('/gallery')
+def gallery():
+    images = os.listdir(os.path.join('static', 'images'))
+    return render_template("gallery.html", images=images)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
