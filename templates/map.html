@@ -24,14 +24,14 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <script>
-        var map = L.map('map').setView([48.8566, 2.3522], 13);
+        var map = L.map('map').setView([50.9513, 1.8587], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        L.marker([48.8566, 2.3522]).addTo(map)
-            .bindPopup("Je suis ici !")
+        L.marker([50.9513, 1.8587]).addTo(map)
+            .bindPopup("ULCO Calais")
             .openPopup();
     </script>
 

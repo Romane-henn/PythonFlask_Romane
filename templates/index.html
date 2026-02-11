@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Accueil</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        nav {
+            background-color: #003366;
+            padding: 15px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: bold;
+        }
+
+        .dropdown {
+            display: inline-block;
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 150px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 10px;
+            display: block;
+            text-decoration: none;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #003366;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="http://127.0.0.1:5001/">Accueil</a>
+        <a href="http://127.0.0.1:5001/map">Carte</a>
+        <div class="dropdown">
+            <a href="#">Menu ▼</a>
+            <div class="dropdown-content">
+                <a href="http://127.0.0.1:5001/about">À propos de moi</a>
+                <a href="http://127.0.0.1:5001/projects">Mes projets</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content">
+        <h1>Bienvenue sur mon application Flask</h1>
+        <p>Projet universitaire - ULCO Calais</p>
+    </div>
+
+</body>
+
+</html>
