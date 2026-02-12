@@ -1,127 +1,91 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from werkzeug.utils import secure_filename
+import numpy as np
+from flask import Flask, render_template, request, send_from_directory
+from sklearn.cluster import KMeans
+from PIL import Image
 
 app = Flask(__name__)
 
-# Dossier pour stocker les images
-UPLOAD_FOLDER = os.path.join('static', 'images')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Fonction pour vérifier l'extension
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# Page d'accueil
+# Route Accueil
 @app.route('/')
 def home():
-    return render_template("index.html")
+    # Style minimaliste pour l'accueil
+    style = "<style>body{font-family:sans-serif;text-align:center;padding:50px;} a{text-decoration:none;color:white;background:#1877f2;padding:10px 20px;border-radius:5px;}</style>"
+    return style + """
+    <h1>Bienvenue sur mon application IA</h1>
+    <a href="/photo">Accéder à la Galerie & IA</a>
+    """
 
-# Page À propos
-@app.route('/about')
-def about():
-    return render_template("about.html")
+# Route Galerie et Sélection
+@app.route('/photo', methods=['GET', 'POST'])
+def photo():
+    images = []
+    # On récupère les données du formulaire
+    dossier_choisi = request.form.get('chemin_dossier', '')
+    photo_selectionnee = request.form.get('menu_photos', '')
 
-# Page Carte
-@app.route('/map')
-def map_view():
-    return render_template("map.html")
+    # Normalisation du chemin pour Windows
+    if dossier_choisi:
+        dossier_choisi = os.path.normpath(dossier_choisi)
+        if os.path.exists(dossier_choisi):
+            try:
+                # Liste les fichiers images
+                images = [f for f in os.listdir(dossier_choisi) 
+                          if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+            except Exception as e:
+                print(f"Erreur d'accès : {e}")
 
-# Page Projets
-@app.route('/projects')
-def projects():
-    return render_template("projects.html")
+    return render_template("photo.html", 
+                           images=images, 
+                           dossier=dossier_choisi, 
+                           photo_finale=photo_selectionnee)
 
-# Page Galerie
-@app.route('/gallery', methods=['GET', 'POST'])
-def gallery():
-    erreur = None
-    if request.method == 'POST':
-        # Vérifie si des fichiers ont été envoyés
-        if 'images' not in request.files:
-            erreur = "Aucun fichier sélectionné."
-        else:
-            files = request.files.getlist('images')
-            for file in files:
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                else:
-                    erreur = "Certains fichiers ne sont pas valides."
+# Route Traitement IA (K-Means)
+@app.route('/process_kmeans', methods=['POST'])
+def process_kmeans():
+    dossier = os.path.normpath(request.form.get('dossier'))
+    photo = request.form.get('photo')
+    k = int(request.form.get('k', 5))
 
-    # Lister toutes les images dans le dossier static/images
-    images = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if allowed_file(f)]
-    image_choisie = request.args.get('image_selectionnee')
+    path_input = os.path.join(dossier, photo)
+    
+    # --- Logique K-Means ---
+    img = Image.open(path_input).convert('RGB')
+    
+    # Redimensionnement pour accélerer le calcul
+    img_small = img.copy()
+    img_small.thumbnail((400, 400)) 
+    
+    img_np = np.array(img_small)
+    original_shape = img_np.shape
+    pixels = img_np.reshape(-1, 3)
 
-    return render_template('gallery.html',
-                           images=images,
-                           image_choisie=image_choisie,
-                           erreur=erreur)
+    # IA : Groupement des couleurs
+    kmeans = KMeans(n_clusters=k, n_init=10, random_state=42)
+    labels = kmeans.fit_predict(pixels)
+    colors = kmeans.cluster_centers_.astype('uint8')
 
-# Route pour afficher les images
-@app.route('/image_brute/<filename>')
-def image_brute(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    # Reconstruction de l'image segmentée
+    new_pixels = colors[labels]
+    new_img_np = new_pixels.reshape(original_shape)
+    
+    result_name = f"kmeans_{k}_{photo}"
+    result_path = os.path.join(dossier, result_name)
+    Image.fromarray(new_img_np).save(result_path)
+
+    # Recharger la liste des images
+    images = [f for f in os.listdir(dossier) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+
+    return render_template("photo.html", 
+                           images=images, 
+                           dossier=dossier, 
+                           photo_finale=result_name)
+
+# Route Cruciale : Permet d'afficher l'image sur Windows
+@app.route('/image_externe/<path:filename>')
+def image_externe(filename):
+    directory = request.args.get('dir')
+    return send_from_directory(directory, filename)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
-
-# import os
-# from flask import Flask, render_template, request, send_from_directory, url_for
-
-# app = Flask(__name__)
-
-# # Page d'accueil
-# @app.route('/')
-# def home():
-#     return render_template("index.html")
-
-# # Page À propos
-# @app.route('/about')
-# def about():
-#     return render_template("about.html")
-
-# # Page Carte
-# @app.route('/map')
-# def map_view():
-#     return render_template("map.html")
-
-# # Répertoire par défaut pour la galerie
-# REPERTOIRE_PAR_DEFAUT = "C:/Users"
-
-# # Page Galerie
-# @app.route('/gallery', methods=['GET', 'POST'])
-# def gallery():
-#     if request.method == 'POST':
-#         chemin_dossier = request.form.get('chemin', REPERTOIRE_PAR_DEFAUT)
-#     else:
-#         chemin_dossier = request.args.get('chemin', REPERTOIRE_PAR_DEFAUT)
-
-#     images = []
-#     erreur = None
-
-#     if os.path.exists(chemin_dossier):
-#         images = [f for f in os.listdir(chemin_dossier) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-#     else:
-#         erreur = "Le répertoire est introuvable."
-
-#     image_choisie = request.args.get('image_selectionnee')
-
-#     return render_template('gallery.html',
-#                            images=images,
-#                            image_choisie=image_choisie,
-#                            chemin=chemin_dossier,
-#                            erreur=erreur)
-
-# # Route pour servir les images brutes
-# @app.route('/image_brute/<path:nom_image>')
-# def image_brute(nom_image):
-#     dossier = request.args.get('dossier')
-#     return send_from_directory(dossier, nom_image)
-
-
-# if __name__ == '__main__':
-#     app.run(debug=True, port=5001)
