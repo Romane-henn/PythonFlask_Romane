@@ -12,8 +12,8 @@ def home():
     # Style minimaliste pour l'accueil
     style = "<style>body{font-family:sans-serif;text-align:center;padding:50px;} a{text-decoration:none;color:white;background:#1877f2;padding:10px 20px;border-radius:5px;}</style>"
     return style + """
-    <h1>Bienvenue sur mon application IA</h1>
-    <a href="/photo">Accéder à la Galerie & IA</a>
+    <h1>Bienvenue sur mon application </h1>
+    <a href="/photo">Accéder à la Galerie </a>
     """
 
 # Route Galerie et Sélection
@@ -40,7 +40,7 @@ def photo():
                            dossier=dossier_choisi, 
                            photo_finale=photo_selectionnee)
 
-# Route Traitement IA (K-Means)
+# Route Traitement  (K-Means)
 @app.route('/process_kmeans', methods=['POST'])
 def process_kmeans():
     dossier = os.path.normpath(request.form.get('dossier'))
@@ -60,7 +60,7 @@ def process_kmeans():
     original_shape = img_np.shape
     pixels = img_np.reshape(-1, 3)
 
-    # IA : Groupement des couleurs
+    #  : Groupement des couleurs
     kmeans = KMeans(n_clusters=k, n_init=10, random_state=42)
     labels = kmeans.fit_predict(pixels)
     colors = kmeans.cluster_centers_.astype('uint8')
@@ -81,7 +81,7 @@ def process_kmeans():
                            dossier=dossier, 
                            photo_finale=result_name)
 
-# Route Cruciale : Permet d'afficher l'image sur Windows
+# Route Crucle : Permet d'afficher l'image sur Windows
 @app.route('/image_externe/<path:filename>')
 def image_externe(filename):
     directory = request.args.get('dir')
