@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hiérarchie & Segmentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f7f9;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .main-card {
+            background: white;
+            max-width: 1000px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #5649c1;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .box {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        .box img {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        h4 {
+            margin: 0;
+            color: #444;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="main-card">
+        <h1>🌳 Analyse Hiérarchique & Segmentation</h1>
+
+        <div class="controls">
+            <form method="POST" action="/hierarchie">
+                <input type="text" name="dossier" value="{{ dossier }}" placeholder="Chemin du dossier (ex: C:\Images)"
+                    style="width: 80%;">
+                <button type="submit">Scanner</button>
+            </form>
+
+            {% if images %}
+            <form method="POST" action="/hierarchie">
+                <input type="hidden" name="dossier" value="{{ dossier }}">
+                <select name="photo" style="width: 50%;">
+                    {% for img in images %}
+                    <option value="{{ img }}" {% if img==photo_origine %}selected{% endif %}>{{ img }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="k" value="{{ k }}" min="2" max="20" style="width: 100px;">
+                <button type="submit" style="background: #27ae60;">Segmenter en K clusters</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if plot_url %}
+        <div class="result-grid">
+            <div class="box">
+                <h4>Dendrogramme (Arbre de décision)</h4>
+
+                <img src="data:image/png;base64,{{ plot_url }}">
+            </div>
+            <div class="box">
+                <h4>Résultat Segmentation (K = {{ k }})</h4>
+                {% if result_image %}
+                <img src="{{ url_for('image_externe', filename=result_image, dir=dossier) }}">
+                {% else %}
+                <p style="color: #999; margin-top: 50px;">Aucun résultat généré.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <br>
+        <a href="/" style="color: #666; text-decoration: none;">← Retour Menu</a>
+    </div>
+
+</body>
+
+</html>
