@@ -3,17 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>DBSCAN Lab</title>
+    <title>DBSCAN Lab - Surface Rejetée</title>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f0f4f8;
             padding: 40px;
             text-align: center;
+            scroll-behavior: smooth;
         }
 
         .lab-card {
-            max-width: 850px;
+            max-width: 950px;
             margin: auto;
             background: white;
             padding: 35px;
@@ -59,6 +60,63 @@
             border: none;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #d35400;
+        }
+
+        /* Stats Dashboard */
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            flex: 1;
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .bg-blue {
+            background: #4361ee;
+        }
+
+        .bg-red {
+            background: #ff4757;
+        }
+
+        .bg-black {
+            background: #2d3436;
+        }
+
+        .stat-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: block;
+        }
+
+        /* Jauge de surface rejetée */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: white;
+            height: 100%;
         }
 
         .comparison {
@@ -75,29 +133,52 @@
         .img-box img {
             width: 100%;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .info-k {
-            margin: 20px 0;
-            padding: 15px;
-            background: #fff3e0;
-            border-radius: 8px;
-            border: 1px solid #e67e22;
-            font-weight: bold;
+        .details-area {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+            text-align: left;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        .color-dot {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 8px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
 
 <body>
+
     <div class="lab-card">
-        <h1>🛰️ Segmentation par Densité (DBSCAN)</h1>
+        <h1>🛰️ Analyse DBSCAN : Surface & Densité</h1>
 
         <div class="section">
             <form method="POST" action="/dbscan">
-                <label>Dossier des images :</label>
-                <input type="text" name="dossier" value="{{ dossier }}" placeholder="C:\Images">
-                <button type="submit">Scanner le répertoire</button>
+                <label>Dossier source :</label>
+                <input type="text" name="dossier" value="{{ dossier }}" placeholder="Chemin vers vos photos">
+                <button type="submit">Charger les images</button>
             </form>
         </div>
 
@@ -105,46 +186,88 @@
         <div class="section">
             <form method="POST" action="/dbscan">
                 <input type="hidden" name="dossier" value="{{ dossier }}">
-                <label>Sélectionner l'image :</label>
+                <label>Choix de la photo :</label>
                 <select name="photo">
-                    {% for img in images %}
-                    <option value="{{ img }}" {% if img==photo_origine %}selected{% endif %}>{{ img }}</option>
-                    {% endfor %}
+                    {% for img in images %}<option value="{{ img }}" {% if img==photo_origine %}selected{% endif %}>{{
+                        img }}</option>{% endfor %}
                 </select>
-
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>Epsilon (Sensibilité) :</label>
-                        <input type="number" step="0.1" name="eps" value="{{ eps }}">
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Min Samples (Densité) :</label>
-                        <input type="number" name="min_samples" value="{{ min_samples }}">
-                    </div>
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex:1;"><label>Epsilon (Rayon)</label><input type="number" step="0.1" name="eps"
+                            value="{{ eps }}"></div>
+                    <div style="flex:1;"><label>Min Samples (Densité)</label><input type="number" name="min_samples"
+                            value="{{ min_samples }}"></div>
                 </div>
-                <button type="submit" style="background: #2d3436;">Calculer la segmentation</button>
+                <button type="submit" style="background: #2d3436;">Lancer l'algorithme</button>
             </form>
         </div>
         {% endif %}
 
         {% if result_image %}
-        <div class="info-k">
-            🔍 L'algorithme a détecté {{ k_trouve }} clusters de couleurs.
+        <div class="stats-container">
+            <a href="#details-table" class="stat-card bg-blue">
+                <span class="stat-val">{{ stats.k }}</span>
+                Classes d'intérêt
+            </a>
+            <div class="stat-card bg-red">
+                <span class="stat-val">{{ stats.surface_rejetee }} %</span>
+                Surface Rejetée
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ stats.surface_rejetee }}%;"></div>
+                </div>
+            </div>
+            <div class="stat-card bg-black">
+                <span class="stat-val">{{ stats.bruit_pixels }}</span>
+                Pixels isolés
+            </div>
         </div>
+
         <div class="comparison">
             <div class="img-box">
-                <p>Originale</p>
-                <img src="{{ url_for('image_externe', filename=photo_origine, dir=dossier) }}">
+                <p><strong>Originale</strong></p><img
+                    src="{{ url_for('image_externe', filename=photo_origine, dir=dossier) }}">
             </div>
             <div class="img-box">
-                <p>DBSCAN (Densité)</p>
-                <img src="{{ url_for('image_externe', filename=result_image, dir=dossier) }}">
+                <p><strong>DBSCAN (Noir = Rejet)</strong></p><img
+                    src="{{ url_for('image_externe', filename=result_image, dir=dossier) }}">
             </div>
+        </div>
+
+        <div id="details-table" class="details-area">
+            <h3>📊 Inventaire détaillé des classes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Identifiant</th>
+                        <th>Couleur moyenne</th>
+                        <th>Surface relative</th>
+                        <th>Nombre de pixels</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in details %}
+                    <tr>
+                        <td><strong>Classe {{ c.id }}</strong></td>
+                        <td><span class="color-dot" style="background-color: {{ c.couleur }};"></span> {{ c.couleur }}
+                        </td>
+                        <td>{{ ((c.taille / stats.total_pixels) * 100) | round(2) }} %</td>
+                        <td>{{ c.taille }} px</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="background: #fdf2f2; font-weight: bold;">
+                        <td style="color: #c53030;">Rejet (Bruit)</td>
+                        <td><span class="color-dot" style="background-color: black;"></span> Noir (Anomalies)</td>
+                        <td style="color: #c53030;">{{ stats.surface_rejetee }} %</td>
+                        <td>{{ stats.bruit_pixels }} px</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         {% endif %}
 
-        <p style="margin-top: 30px;"><a href="/" style="text-decoration: none; color: #a0aec0;">← Retour Menu</a></p>
+        <p style="margin-top: 40px;"><a href="/" style="text-decoration: none; color: #a0aec0;">← Retour à l'accueil</a>
+        </p>
     </div>
+
 </body>
 
 </html>
